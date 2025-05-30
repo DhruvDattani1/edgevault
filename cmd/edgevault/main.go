@@ -16,6 +16,12 @@ func main() {
 	cmd := os.Args[1]
 	sourceFile := os.Args[2]
 
+	if _, err := os.Stat(sourceFile); os.IsNotExist(err) {
+		fmt.Printf("Error: source file '%s' does not exist\n", sourceFile)
+		os.Exit(1)
+	}
+	//Make sure the file exists ^
+
 	masterKey := []byte("12345678901234567890123456789012") // 32 bytes
 
 	switch cmd {
