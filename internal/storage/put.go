@@ -14,7 +14,7 @@ const (
 
 func Put(sourceFile string) error {
 
-	err := os.MkdirAll(storageDir, 0100)
+	err := os.MkdirAll(storageDir, 0700)
 	if err != nil {
 		return fmt.Errorf("no dir created: %w", err)
 	}
@@ -37,23 +37,25 @@ func Put(sourceFile string) error {
 		return fmt.Errorf("can't make partial file: %w", err)
 	}
 
+	defer func() {
+		if closeErr := outFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close partial file: %w", closeErr)
+		}
+	}()
 
 	buf := make([]byte, bufferSize)
 	_, err = io.CopyBuffer(outFile, inFile, buf)
 	if err != nil {
-		outFile.Close()
 		return fmt.Errorf("data couldn't be copied: %w", err)
 	}
 
 
 	err = outFile.Sync()
 	if err != nil {
-		outFile.Close()
 		return fmt.Errorf("partial didn't sync all the way: %w", err)
 	}
 
 
-	err = outFile.Close()
 	if err != nil {
 		return fmt.Errorf("partial not closed: %w", err)
 	}
