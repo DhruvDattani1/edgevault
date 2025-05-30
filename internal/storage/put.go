@@ -32,7 +32,7 @@ func Put(sourceFile string) error {
 	finalPath := filepath.Join(storageDir, destFilename)
 
 
-	outFile, err := os.Create(partialPath)
+	outFile, err := os.OpenFile(partialPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0400)
 	if err != nil {
 		return fmt.Errorf("can't make partial file: %w", err)
 	}
@@ -44,14 +44,12 @@ func Put(sourceFile string) error {
 	}()
 
 	buf := make([]byte, bufferSize)
-	_, err = io.CopyBuffer(outFile, inFile, buf)
-	if err != nil {
+	if err = io.CopyBuffer(outFile, inFile, buf); err != nil {
 		return fmt.Errorf("data couldn't be copied: %w", err)
 	}
 
 
-	err = outFile.Sync()
-	if err != nil {
+	if err = outFile.Sync(); err != nil {
 		return fmt.Errorf("partial didn't sync all the way: %w", err)
 	}
 
@@ -61,8 +59,7 @@ func Put(sourceFile string) error {
 	}
 
 
-	err = os.Rename(partialPath, finalPath)
-	if err != nil {
+	if err = os.Rename(partialPath, finalPath); err != nil {
 		return fmt.Errorf("partial not renamed: %w", err)
 	}
 
