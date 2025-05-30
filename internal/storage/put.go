@@ -12,7 +12,7 @@ import (
 
 const (
 	storageDir = "crypta"
-	bufferSize = 128 * 1024
+	//don't end up using the buffer anyways since I am doing ReadAll(), this is also a Poly1305 constraint
 )
 
 func Put(sourceFile string, masterKey []byte) error {
@@ -47,27 +47,31 @@ func Put(sourceFile string, masterKey []byte) error {
 		return fmt.Errorf("can't make partial file: %w", err)
 	}
 
+	defer outFile.Close() //this way I know my file will be closed, more idiomatic, in case of function panic
+
+	var writeErr error
 	defer func() {
-		for i := range plaintext {
-			plaintext[i] = 0
+		if writeErr != nil {
+			os.Remove(partialPath)
 		}
-		outFile.Close()
 	}()
 
-	if _, err := outFile.Write(nonce); err != nil {
-		return fmt.Errorf("failed to write nonce: %w", err)
+	// using a defer to make sure that the file is discarded as well if there is an error (all or nothing)
+
+	if _, writeErr = outFile.Write(nonce); writeErr != nil {
+		return fmt.Errorf("failed to write nonce: %w", writeErr)
 	}
 
-	if _, err := outFile.Write(ciphertext); err != nil {
-		return fmt.Errorf("failed to write ciphertext: %w", err)
+	if _, writeErr = outFile.Write(ciphertext); writeErr != nil {
+		return fmt.Errorf("failed to write ciphertext: %w", writeErr)
 	}
 
-	if err := outFile.Sync(); err != nil {
-		return fmt.Errorf("partial didn't sync: %w", err)
+	if writeErr = outFile.Sync(); writeErr != nil {
+		return fmt.Errorf("partial didn't sync: %w", writeErr)
 	}
 
-	if err := os.Rename(partialPath, finalPath); err != nil {
-		return fmt.Errorf("partial not renamed: %w", err)
+	if writeErr = os.Rename(partialPath, finalPath); writeErr != nil {
+		return fmt.Errorf("partial not renamed: %w", writeErr)
 	}
 
 	return nil
