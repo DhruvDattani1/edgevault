@@ -1,10 +1,14 @@
 package storage
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	
+	"goland.org/x/crypto/chacha20poly1305"
+
 )
 
 const (
