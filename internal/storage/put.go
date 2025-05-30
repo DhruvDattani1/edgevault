@@ -1,13 +1,12 @@
 package storage
 
 import (
-	"crypto/rand"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	
-	"goland.org/x/crypto/chacha20poly1305"
+	"github.com/DhruvDattani1/edgevault/internal/crypto"
 
 )
 
@@ -16,50 +15,60 @@ const (
 	bufferSize = 128 * 1024
 )
 
-func Put(sourceFile string) (err error) {
-	err = os.MkdirAll(storageDir, 0700)
-	if err != nil {
-		return fmt.Errorf("no dir created: %w", err)
-	}
-	
-	var inFile *os.File
-	inFile, err = os.Open(sourceFile)
+func Put(sourceFile string, masterKey []byte) error {
+
+	inFile, err := os.Open(sourceFile)
 	if err != nil {
 		return fmt.Errorf("can't open source file: %w", err)
 	}
 	defer inFile.Close()
-	
+
+	plaintext, err := io.ReadAll(inFile)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	nonce, ciphertext, err := crypto.Encrypt(masterKey, plaintext)
+	if err != nil {
+		return fmt.Errorf("encryption failed: %w", err)
+	}
+
 	destFilename := filepath.Base(sourceFile) + ".crypta"
 	partialPath := filepath.Join(storageDir, destFilename+".partial")
 	finalPath := filepath.Join(storageDir, destFilename)
-	
-	var outFile *os.File
-	outFile, err = os.OpenFile(partialPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+
+	err = os.MkdirAll(storageDir, 0700)
+	if err != nil {
+		return fmt.Errorf("no dir created: %w", err)
+	}
+
+	outFile, err := os.OpenFile(partialPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("can't make partial file: %w", err)
 	}
-	
+
 	defer func() {
-		if closeErr := outFile.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("failed to close partial file: %w", closeErr)
+		for i := range plaintext {
+			plaintext[i] = 0
 		}
+		outFile.Close()
 	}()
-	
-	buf := make([]byte, bufferSize)
-	_, err = io.CopyBuffer(outFile, inFile, buf)
-	if err != nil {
-		return fmt.Errorf("data couldn't be copied: %w", err)
+
+	if _, err := outFile.Write(nonce); err != nil {
+		return fmt.Errorf("failed to write nonce: %w", err)
 	}
-	
-	err = outFile.Sync()
-	if err != nil {
-		return fmt.Errorf("partial didn't sync all the way: %w", err)
+
+	if _, err := outFile.Write(ciphertext); err != nil {
+		return fmt.Errorf("failed to write ciphertext: %w", err)
 	}
-	
-	err = os.Rename(partialPath, finalPath)
-	if err != nil {
+
+	if err := outFile.Sync(); err != nil {
+		return fmt.Errorf("partial didn't sync: %w", err)
+	}
+
+	if err := os.Rename(partialPath, finalPath); err != nil {
 		return fmt.Errorf("partial not renamed: %w", err)
 	}
-	
+
 	return nil
 }
