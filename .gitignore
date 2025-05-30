@@ -1,0 +1,52 @@
+# Binaries
+/bin/
+/build/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# IDEs / Editors
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+
+# Compiled objects
+*.o
+*.a
+*.out
+
+# Go-specific
+*.test
+vendor/
+
+# Dependency cache
+Gopkg.lock
+Gopkg.toml
+
+# If using Docker
+docker-compose.override.yml
+
+# If you’re using coverage reports
+*.coverprofile
+*.cov
+*.testprofile
+
+# If you have any secrets/keys
+*.pem
+*.key
+
+# If you decide to include any local config
+config.local.yaml
+
+# EdgeVault data dir (if you decide to store test vaults locally)
+data/
