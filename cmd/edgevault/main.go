@@ -16,9 +16,11 @@ func main() {
 	cmd := os.Args[1]
 	sourceFile := os.Args[2]
 
+	masterKey := []byte("12345678901234567890123456789012") // 32 bytes
+
 	switch cmd {
 	case "put":
-		err := storage.Put(sourceFile)
+		err := storage.Put(sourceFile, masterKey)
 		if err != nil {
 			fmt.Printf("Error putting file: %v\n", err)
 			os.Exit(1)
