@@ -56,11 +56,6 @@ func Put(sourceFile string) error {
 	}
 
 
-	if err != nil {
-		return fmt.Errorf("partial not closed: %w", err)
-	}
-
-
 	err = os.Rename(partialPath, finalPath)
 	if err != nil {
 		return fmt.Errorf("partial not renamed: %w", err)
