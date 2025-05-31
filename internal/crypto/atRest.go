@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -66,6 +67,12 @@ func EncryptLargeFile(inPath, outPath string, masterKey []byte) error {
 			}
 
 			ciphertext := aead.Seal(nil, nonce, buf[:n], nil)
+
+			chunkLen := make([]byte, 4)
+			binary.LittleEndian.PutUint32(chunkLen, uint32(len(ciphertext)))
+			if _, err := outFile.Write(chunkLen); err != nil {
+				return fmt.Errorf("failed to write chunk length: %w", err)
+			}
 
 			if _, err := outFile.Write(nonce); err != nil {
 				return err
