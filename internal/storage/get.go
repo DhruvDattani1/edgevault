@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,12 +24,11 @@ func Get(objectName string, destPath string, masterKey []byte) error {
 		return fmt.Errorf("failed to read file header: %w", err)
 	}
 
-	// Detect large file by magic header
 	if string(header) == "EV1\x00" {
-		return errors.New("chunked decryption not yet implemented")
+		inFile.Close()
+		return crypto.DecryptLargeFile(srcPath, destPath, masterKey)
 	}
 
-	// Small file: rewind and read all
 	if _, err := inFile.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("seek failed: %w", err)
 	}
@@ -52,7 +50,6 @@ func Get(objectName string, destPath string, masterKey []byte) error {
 		return fmt.Errorf("decryption failed: %w", err)
 	}
 
-	// Write to destination
 	outFile, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("can't create output file: %w", err)
