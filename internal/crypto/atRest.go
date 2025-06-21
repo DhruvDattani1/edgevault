@@ -92,3 +92,22 @@ func EncryptLargeFile(inPath, outPath string, masterKey []byte) error {
 
 	return nil
 }
+
+
+func Decrypt(masterKey, nonce, ciphertext []byte) ([]byte, error) {
+	if len(masterKey) != chacha20poly1305.KeySize {
+		return nil, fmt.Errorf("invalid master key size: must be 32 bytes")
+	}
+
+	aead, err := chacha20poly1305.New(masterKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	plaintext, err := aead.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, fmt.Errorf("decryption failed: %w", err)
+	}
+
+	return plaintext, nil
+}

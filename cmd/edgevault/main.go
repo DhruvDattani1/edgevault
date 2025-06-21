@@ -34,5 +34,21 @@ func main() {
 		fmt.Println("File stored successfully.")
 	default:
 		fmt.Println("Unknown command.")
+
+	case "get":
+		if len(os.Args) < 4 {
+			fmt.Println("Usage: edgevault get <object_name> <dest_file>")
+			os.Exit(1)
+		}
+		objectName := os.Args[2]
+		destPath := os.Args[3]
+		err := storage.Get(objectName, destPath, masterKey)
+		if err != nil {
+			fmt.Printf("Error getting file: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("File decrypted successfully.")
+
 	}
+	
 }
